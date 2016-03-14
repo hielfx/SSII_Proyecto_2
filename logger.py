@@ -27,8 +27,17 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 
-def get_logger():
-    return logger
+def get_logger(file_handler='socket.log'):
+    """This method will return the default logger ('logger') or a copy with the modified file handler ('new_logger')"""
+    result = logger  # Default logger
+    if file_handler != 'socket.log':
+        new_logger = logger  # We create a copy so we don't modify the original
+        new_logger.removeHandler(fh)
+        fh2 = logging.FileHandler(file_handler)
+        fh2.setFormatter(formatter)
+        new_logger.addHandler(fh2)
+        result = new_logger  # We change the return value to the copy
+    return result
 
 
 def generate_error_message(msg):
