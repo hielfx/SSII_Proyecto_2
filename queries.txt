@@ -1,0 +1,8 @@
+Query para obtener el ratio de editados del globlal del mes actual:
+    select count(*) from transmission where edited=0;
+    select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47';
+    ==>  select (select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47')*1.0/count(*) from transmission where edited=0;
+
+    select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47';
+
+Esta es: select (select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47')*1.0/count(*) from transmission where strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47';

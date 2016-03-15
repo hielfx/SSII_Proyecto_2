@@ -13,16 +13,18 @@ from hashlib import sha256
 class ClientSocket:
 
     def __init__(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket()
+        self.socket.settimeout(5)  # If the socket doesnt receive a response in 5 seconds it will raise a exception
 
     def connect(self, host=socket.gethostbyname(socket.gethostname()), port=7070):
         try:
             self.socket.connect((host, port))
-        except ConnectionRefusedError:
-            c_utl.generate_msgbox("Error", "You can not establish a connection because the target machine expressly "
+        except Exception:
+            g_utl.generate_msgbox("Error", "You can not establish a connection because the target machine expressly "
                                         "rejected that connection. Check if the server socket is running.\n"
-                                        "The connection address was '{0}:{1}'".
-                               format(host, port), "error")
+                                        "The connection address was '{0}:{1}'".format(host, port), "error")
+        except socket.timeout:
+            g_utl.generate_msgbox("Timeout", "Exceeded the timeout for the connection when waiting for data (timeout: 5 seconds).", "warning")
 
     def stop_socket(self):
         self.socket.shutdown()
@@ -40,12 +42,18 @@ class ClientSocket:
 
         _data = json.dumps(dict)
 
-        self.socket.sendall(bytes(str.encode(_data)))
+        try:
+            self.socket.sendall(bytes(str.encode(_data)))
 
-        received = str(self.socket.recv(1024), "utf-8")
-        # self.socket.sendall(_data)
-        # received = str(self.socket.recv(1024), "utf-8")
-        # print(received)
+            received = str(self.socket.recv(1024), "utf-8")
+            _dict = json.loads(received)
+
+            # We show the server response in a window
+            g_utl.generate_server_response(_dict)
+
+            # print(received)
+        except socket.timeout:
+            g_utl.generate_msgbox("Timeout", "Exceeded the timeout for the connection (timeout: 5 seconds).", "warning")
 
 if __name__ == "__main__":
     # g_utl.generate_client_interface()

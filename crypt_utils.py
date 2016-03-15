@@ -30,6 +30,27 @@ def generate_nonce():
     return hashlib.sha256(str.encode(result)).hexdigest()
 
 
+def check_nonce_in_db(nonce):
+    check_table()
+    logger.get_logger().info("Checking the NONCE...")
+    table_name = "transmission"
+    conn=sqlite3.connect(str(app_name)+".db")
+    statement = "SELECT COUNT(*) FROM {0} where nonce like ?;".format(table_name)
+    result = True
+    try:
+        cursor = conn.execute(statement, (nonce,))
+        count = cursor.fetchone()[0]
+        if count is not None and count == 0:
+            logger.get_logger().info("The NONCE {0} isn't in the database".format(nonce))
+            result = False
+        else:
+            logger.get_logger().warn("The NONCE {0} is already in the database!".format(nonce))
+
+    except:
+        logger.generate_error_message("Error while trying to check the NONCE.")
+
+    return result
+
 def hash_message(message, key=os.urandom(8), mode=sha256):
         """This method hash the message with a given key and hash algorithm and returns a tuple with the hashed message and the key.
         The default hash mode is sha256."""
@@ -63,7 +84,8 @@ def hash_message(message, key=os.urandom(8), mode=sha256):
             return None
 
 
-def check_table(conn=sqlite3.connect(str(app_name)+".db")):
+def check_table():
+    conn = sqlite3.connect(str(app_name)+".db")
     cursor = None
     table_name = "transmission"
     try:
@@ -79,7 +101,7 @@ def check_table(conn=sqlite3.connect(str(app_name)+".db")):
             # We create the create_table script
             logger.get_logger().info("The table {0} doesn't exists. Creating table...".format(table_name))
 
-            create_table = "CREATE TABLE {0} (id INTEGER PRIMARY KEY AUTOINCREMENT, nonce TEXT UNIQUE, insert_date DATE, hex_hmac TEXT);".format(
+            create_table = "CREATE TABLE {0} (id INTEGER PRIMARY KEY AUTOINCREMENT, nonce TEXT UNIQUE, insert_date DATE, hex_hmac TEXT, edited NUMERIC);".format(
                 table_name)
             conn.execute(create_table)
 
@@ -171,9 +193,11 @@ def check_ratio(total_sent_messages, _stable_integrity_messages, conn=sqlite3.co
             check_ratio_values(total_sent_messages, _stable_integrity_messages)
 
 
-def insert_hmac(nonce, hmac, conn=sqlite3.connect(str(app_name)+".db")):
+def insert_hmac(nonce, hmac, edited=0):
+    table_name = "transmission"
+    conn=sqlite3.connect(str(app_name)+".db")
     logger.get_logger().info("Inserting NONCE in the Data Base...")
-    insert = "INSERT INTO {0} (nonce, insert_date, hex_hmac) VALUES ('{1}',?,'{2}');".format(app_name, nonce, hmac)
+    insert = "INSERT INTO {0} (nonce, insert_date, hex_hmac, edited) VALUES ('{1}',?,'{2}',?);".format(table_name, nonce, hmac)
     # print(insert)
     logger.get_logger().debug("INSERT statement: " + insert)
     # print(insert,(_key,))
@@ -181,19 +205,20 @@ def insert_hmac(nonce, hmac, conn=sqlite3.connect(str(app_name)+".db")):
     try:
         now = datetime.datetime.now()
         now.strftime('%Y-%m-%d %H:%M:%S')
-        cursor = conn.execute(insert, (now,))
+        cursor = conn.execute(insert, (now,edited,))
         conn.commit()
         logger.get_logger().info("The NONCE has been saved correctly in the Data Base\n")
+
     except Exception:
         logger.generate_error_message("Error while trying to insert the NONCE in the Data Base\n")
 
-    cursor.close()
     return cursor
 
 
 def check_integrity(hmac, message):
-   # TODO: Complete method
-    message_hmac = hash_message(message=message, key=bytes('P$1_m3$$4G3_k3Y'))
+    logger.get_logger().info("Checking the integrity of the message '{0}'".format(message))
+   # TODO: COMPLETE THE METHOD
+    message_hmac = hash_message(message=message, key=b'P$1_m3$$4G3_k3Y')[1]
     if hmac == message_hmac:
         logger.get_logger().info("The integrity of the message '{0}' is correct".format(message))
         globals()['stable_integrity_messages'] += 1
