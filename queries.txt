@@ -1,10 +1,7 @@
-Query para obtener el ratio de editados del globlal del mes actual:
-    select count(*) from transmission where edited=0;
-    select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47';
-    ==>  select (select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47')*1.0/count(*) from transmission where edited=0;
+Past month
+select round(avg(integrity),2) from transmission where strftime('%Y-%m',insert_date)=strftime('%Y-%m',date('now','start of month','-1 month'));
 
-    select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47';
+Grouped by month
+select strftime('%Y-%m',insert_date), round(avg(integrity),2) from transmission group by strftime('%Y-%m',insert_date);
 
-Esta es: select (select count(*) from transmission where edited=0 and strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47')*1.0/count(*) from transmission where strftime('%Y-%m-%d %M',insert_date)='2016-03-15 47';
-
-select (select count(*) from transmission where edited=0 and strftime('%Y-%m',insert_date)='2016-03')*1.0/count(*) from transmission where strftime('%Y-%m',insert_date)=strftime('%Y-%m','now');
+select strftime('%Y-%m-%d',insert_date), round(avg(integrity),2) from transmission where strftime('%Y-%m',insert_date)=strftime('%Y-%m',date('now','start of month','-1 month')) group by strftime('%Y-%m-%d',insert_date);
